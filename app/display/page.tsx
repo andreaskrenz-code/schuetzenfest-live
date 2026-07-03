@@ -89,7 +89,7 @@ export default function DisplayPage() {
         {showInsignia ? (
           <div className="bg-white text-green-950 rounded-3xl px-10 py-10 shadow-2xl w-full max-w-5xl">
             <div className="text-7xl font-black mb-8">
-              {insigniaLabels[liveState.insignia]}
+                {liveState.insignia ? insigniaLabels[liveState.insignia] : ""}
             </div>
 
             {company && (

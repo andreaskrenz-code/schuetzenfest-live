@@ -38,69 +38,107 @@ export default function SetupPage() {
   }
 
   async function saveParticipants() {
-  setSaving(true);
-  setMessage("Speichere...");
+    setSaving(true);
+    setMessage("Speichere...");
 
-  const cleanParticipants = participants
-    .map((p, index) => ({
-      name: p.name.trim(),
-      company_key: p.companyKey,
-      competition,
-      sort_order: index + 1,
-    }))
-    .filter((p) => p.name.length > 0);
+    const cleanParticipants = participants
+      .map((p, index) => ({
+        name: p.name.trim(),
+        company_key: p.companyKey,
+        competition,
+        sort_order: index + 1,
+        ausgeschieden: false,
+      }))
+      .filter((p) => p.name.length > 0);
 
-  if (cleanParticipants.length === 0) {
-    setMessage("Bitte mindestens einen Namen eintragen.");
+    if (cleanParticipants.length === 0) {
+      setMessage("Bitte mindestens einen Namen eintragen.");
+      setSaving(false);
+      return;
+    }
+
+    await supabase
+      .from("sf_live_state")
+      .update({
+        participant_id: null,
+        participant_name: null,
+        company_key: null,
+        message_type: "normal",
+        insignia: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+
+    const deleteResult = await supabase
+      .from("sf_participants")
+      .delete()
+      .eq("competition", competition)
+      .select();
+
+    if (deleteResult.error) {
+      console.error(deleteResult.error);
+      setMessage(deleteResult.error.message);
+      setSaving(false);
+      return;
+    }
+
+    const insertResult = await supabase
+      .from("sf_participants")
+      .insert(cleanParticipants)
+      .select();
+
+    if (insertResult.error) {
+      console.error(insertResult.error);
+      setMessage(insertResult.error.message);
+      setSaving(false);
+      return;
+    }
+
+    setMessage(`Gespeichert: ${cleanParticipants.length} Teilnehmer.`);
     setSaving(false);
-    return;
   }
 
-  const deleteResult = await supabase
-    .from("sf_participants")
-    .delete()
-    .eq("competition", competition)
-    .select();
+  async function resetFestival() {
+    const confirmed = confirm(
+      "Neues Schützenfest vorbereiten?\n\nAlle Teilnehmer, Ereignisse und Insignien werden gelöscht."
+    );
 
-  console.log("DELETE RESULT:", deleteResult);
+    if (!confirmed) return;
 
-  if (deleteResult.error) {
-    console.error(deleteResult.error);
-    setMessage(deleteResult.error.message);
+    setSaving(true);
+    setMessage("Bereite neues Schützenfest vor...");
+
+    await supabase
+      .from("sf_live_state")
+      .update({
+        competition: "prince",
+        company_key: null,
+        participant_id: null,
+        participant_name: null,
+        message_type: "normal",
+        insignia: null,
+        krone_gefallen: false,
+        zepter_gefallen: false,
+        apfel_gefallen: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+
+    await supabase
+      .from("sf_event_log")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    await supabase
+      .from("sf_participants")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    setParticipants([{ name: "", companyKey: "heide" }]);
+    setCompetition("prince");
+    setMessage("✅ Neues Schützenfest wurde vorbereitet.");
     setSaving(false);
-    return;
   }
-
-  const insertResult = await supabase
-    .from("sf_participants")
-    .insert(cleanParticipants)
-    .select();
-
-  console.log("INSERT RESULT:", insertResult);
-
-  if (insertResult.error) {
-    console.error(insertResult.error);
-    setMessage(insertResult.error.message);
-    setSaving(false);
-    return;
-  }
-
-  await supabase
-    .from("sf_live_state")
-    .update({
-      competition,
-      company_key: null,
-      participant_id: null,
-      participant_name: null,
-      message_type: "normal",
-      insignia: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", 1);
-
-  setMessage(`Gespeichert: ${cleanParticipants.length} Teilnehmer.`);
-  setSaving(false);
-}
 
   return (
     <main className="min-h-screen bg-neutral-100">
@@ -194,6 +232,14 @@ export default function SetupPage() {
             className="w-full bg-yellow-500 disabled:bg-neutral-400 rounded-2xl p-5 text-xl font-bold shadow"
           >
             {saving ? "Speichere..." : "Teilnehmer speichern"}
+          </button>
+
+          <button
+            onClick={resetFestival}
+            disabled={saving}
+            className="w-full bg-red-700 disabled:bg-neutral-400 text-white rounded-2xl p-5 text-xl font-bold shadow"
+          >
+            🧹 Neues Schützenfest vorbereiten
           </button>
 
           {message && (

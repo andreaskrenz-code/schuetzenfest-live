@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { companies } from "@/lib/companies";
+import Link from "next/link";
 
 type Competition = "prince" | "king";
 
@@ -142,9 +143,20 @@ export default function SetupPage() {
 
   return (
     <main className="min-h-screen bg-neutral-100">
-      <header className="bg-green-900 text-white p-5 shadow">
-        <h1 className="text-2xl font-bold text-center">Einrichtung</h1>
-      </header>
+      <header className="bg-green-900 text-white p-5 shadow relative">
+
+  <Link
+    href="/"
+    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
+  >
+    ← Start
+  </Link>
+
+  <h1 className="text-2xl font-bold text-center">
+    Einrichtung
+  </h1>
+
+</header>
 
       <section className="max-w-md mx-auto p-4 space-y-5">
         <div className="grid grid-cols-2 gap-3">
@@ -186,7 +198,7 @@ export default function SetupPage() {
               className="bg-white rounded-xl shadow-sm border p-3 space-y-2"
             >
               <input
-                className="w-full p-3 rounded-lg border text-lg"
+                className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 text-xl text-black placeholder:text-gray-400 focus:border-green-700 focus:outline-none"
                 placeholder="Name"
                 value={participant.name}
                 onChange={(e) =>
@@ -195,7 +207,7 @@ export default function SetupPage() {
               />
 
               <select
-                className="w-full p-3 rounded-lg border text-lg"
+                className="w-full p-3 rounded-lg border text-lg text-black bg-white"
                 value={participant.companyKey}
                 onChange={(e) =>
                   updateParticipant(index, "companyKey", e.target.value)

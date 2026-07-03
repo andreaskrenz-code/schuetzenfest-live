@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { companies } from "@/lib/companies";
 
+
 type Competition = "prince" | "king";
 
 type Participant = {
@@ -215,21 +216,21 @@ export default function ControlPage() {
   if (selectedCompany) {
     return (
       <main className="min-h-screen bg-neutral-100">
-        <header className="bg-green-900 text-white p-5 shadow">
-          <button
-            onClick={() => {
-              setSelectedCompanyId(null);
-              setSelectedParticipant(null);
-            }}
-            className="underline text-sm"
-          >
-            ← Zurück zur Kompanieauswahl
-          </button>
+        <header className="bg-green-900 text-white p-5 shadow relative">
+  <button
+    onClick={() => {
+      setSelectedCompanyId(null);
+      setSelectedParticipant(null);
+    }}
+    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
+  >
+    ← Zurück
+  </button>
 
-          <h1 className="text-2xl font-bold text-center mt-2">
-            {selectedCompany.name}
-          </h1>
-        </header>
+  <h1 className="text-2xl font-bold text-center">
+    {selectedCompany.name}
+  </h1>
+</header>
 
         <section className="max-w-md mx-auto p-4 space-y-5">
           <div

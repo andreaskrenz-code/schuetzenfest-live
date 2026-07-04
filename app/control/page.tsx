@@ -41,6 +41,27 @@ export default function ControlPage() {
   }, [competition]);
 
   useEffect(() => {
+  const channel = supabase
+    .channel("sf_participants_changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "sf_participants",
+      },
+      () => {
+        loadParticipants();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [competition]);
+
+  useEffect(() => {
     setIsOnline(navigator.onLine);
 
     function handleOnline() {
@@ -241,6 +262,42 @@ export default function ControlPage() {
             {isOnline ? "🟢 Verbunden" : "🔴 Keine Verbindung"}
           </div>
 
+          <div className="bg-white rounded-2xl shadow p-4 space-y-2">
+
+  <h2 className="text-lg font-bold text-green-900">
+    Wettbewerbsstatus
+  </h2>
+
+  <div className="flex justify-between">
+    <span>👑 Krone</span>
+    <span className={insigniaState.krone ? "text-green-700 font-bold" : "text-red-600"}>
+      {insigniaState.krone ? "gefallen" : "offen"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>⚜️ Zepter</span>
+    <span className={insigniaState.zepter ? "text-green-700 font-bold" : "text-red-600"}>
+      {insigniaState.zepter ? "gefallen" : "offen"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>🌍 Apfel</span>
+    <span className={insigniaState.apfel ? "text-green-700 font-bold" : "text-red-600"}>
+      {insigniaState.apfel ? "gefallen" : "offen"}
+    </span>
+  </div>
+
+  <div className="flex justify-between">
+    <span>🎯 Vogel</span>
+    <span className="text-red-600">
+      offen
+    </span>
+  </div>
+
+</div>
+
           {statusMessage && (
             <div className="bg-green-700 text-white rounded-2xl p-4 text-center font-bold shadow">
               {statusMessage}
@@ -392,12 +449,7 @@ export default function ControlPage() {
           <p className="text-center font-bold text-green-900">Lade Daten...</p>
         )}
 
-        <button
-          onClick={loadParticipants}
-          className="w-full bg-yellow-500 rounded-2xl p-4 text-xl font-bold shadow"
-        >
-          Teilnehmer neu laden
-        </button>
+        
 
         <div className="space-y-4">
           {companies.map((company) => (

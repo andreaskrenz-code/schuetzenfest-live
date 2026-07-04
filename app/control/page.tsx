@@ -6,7 +6,6 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { companies } from "@/lib/companies";
 
-
 type Competition = "prince" | "king";
 
 type Participant = {
@@ -28,6 +27,8 @@ export default function ControlPage() {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [isOnline, setIsOnline] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [insigniaState, setInsigniaState] = useState({
     krone: false,
     zepter: false,
@@ -41,25 +42,19 @@ export default function ControlPage() {
   }, [competition]);
 
   useEffect(() => {
-  const channel = supabase
-    .channel("sf_participants_changes")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "sf_participants",
-      },
-      () => {
-        loadParticipants();
-      }
-    )
-    .subscribe();
+    const channel = supabase
+      .channel("sf_participants_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sf_participants" },
+        () => loadParticipants()
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [competition]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [competition]);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -83,11 +78,22 @@ export default function ControlPage() {
 
   function showStatus(message: string) {
     setStatusMessage(message);
-
-    setTimeout(() => {
-      setStatusMessage("");
-    }, 3000);
+    setTimeout(() => setStatusMessage(""), 3000);
   }
+
+  function participantCount(companyId: string) {
+    return participants.filter(
+      (p) => p.company_key === companyId && !p.ausgeschieden
+    ).length;
+  }
+
+  const searchResults = participants.filter((participant) =>
+    participant.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+  );
+
+  const namesForCompany = participants.filter(
+    (p) => p.company_key === selectedCompanyId
+  );
 
   async function loadParticipants() {
     setLoading(true);
@@ -148,7 +154,7 @@ export default function ControlPage() {
     }
   }
 
-  async function selectParticipant(participant: Participant) {
+  async function selectParticipant(participant: Participant, stayOnMain = false) {
     setSelectedParticipant(participant);
 
     const { error } = await supabase
@@ -165,7 +171,18 @@ export default function ControlPage() {
       .eq("id", 1);
 
     if (!error) {
-      showStatus(`✅ ${participant.name} ist jetzt auf dem Bildschirm`);
+      const company = companies.find((c) => c.id === participant.company_key);
+      showStatus(`📺 ${participant.name} ist jetzt auf dem Bildschirm`);
+
+      if (stayOnMain) {
+        setSelectedCompanyId(null);
+        setSelectedParticipant(null);
+        setSearchTerm("");
+      } else {
+        setSelectedCompanyId(participant.company_key);
+      }
+
+      console.log("Angezeigt:", participant.name, company?.name);
     }
   }
 
@@ -230,73 +247,78 @@ export default function ControlPage() {
     showStatus(`✅ ${labels[insignia]} ist jetzt auf dem Bildschirm`);
   }
 
-  const namesForCompany = participants.filter(
-    (p) => p.company_key === selectedCompanyId
-  );
+  function StatusPanel() {
+    return (
+      <div className="bg-white rounded-2xl shadow p-4 space-y-3">
+        <div
+          className={`rounded-xl p-3 text-center font-bold ${
+            isOnline ? "bg-green-700 text-white" : "bg-red-700 text-white"
+          }`}
+        >
+          {isOnline ? "🟢 Verbunden" : "🔴 Keine Verbindung"}
+        </div>
+
+        <div className="text-center">
+          <div className="text-xl font-bold text-green-900">
+            {competition === "prince" ? "Prinzenschießen" : "Königsschießen"}
+          </div>
+          <div className="text-sm text-gray-600">
+            {competition === "prince" ? "Sonntag" : "Montag"}
+          </div>
+        </div>
+
+        <div className="border-t pt-3 space-y-1">
+          <div className="flex justify-between">
+            <span>👑 Krone</span>
+            <span className={insigniaState.krone ? "text-green-700 font-bold" : "text-red-600"}>
+              {insigniaState.krone ? "gefallen" : "offen"}
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span>⚜️ Zepter</span>
+            <span className={insigniaState.zepter ? "text-green-700 font-bold" : "text-red-600"}>
+              {insigniaState.zepter ? "gefallen" : "offen"}
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span>🌍 Apfel</span>
+            <span className={insigniaState.apfel ? "text-green-700 font-bold" : "text-red-600"}>
+              {insigniaState.apfel ? "gefallen" : "offen"}
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span>🎯 Vogel</span>
+            <span className="text-red-600">offen</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedCompany) {
     return (
       <main className="min-h-screen bg-neutral-100">
         <header className="bg-green-900 text-white p-5 shadow relative">
-  <button
-    onClick={() => {
-      setSelectedCompanyId(null);
-      setSelectedParticipant(null);
-    }}
-    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
-  >
-    ← Zurück
-  </button>
+          <button
+            onClick={() => {
+              setSelectedCompanyId(null);
+              setSelectedParticipant(null);
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
+          >
+            ← Zurück
+          </button>
 
-  <h1 className="text-2xl font-bold text-center">
-    {selectedCompany.name}
-  </h1>
-</header>
+          <h1 className="text-2xl font-bold text-center">
+            {selectedCompany.name}
+          </h1>
+        </header>
 
         <section className="max-w-md mx-auto p-4 space-y-5">
-          <div
-            className={`rounded-2xl p-3 text-center font-bold shadow ${
-              isOnline ? "bg-green-700 text-white" : "bg-red-700 text-white"
-            }`}
-          >
-            {isOnline ? "🟢 Verbunden" : "🔴 Keine Verbindung"}
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-4 space-y-2">
-
-  <h2 className="text-lg font-bold text-green-900">
-    Wettbewerbsstatus
-  </h2>
-
-  <div className="flex justify-between">
-    <span>👑 Krone</span>
-    <span className={insigniaState.krone ? "text-green-700 font-bold" : "text-red-600"}>
-      {insigniaState.krone ? "gefallen" : "offen"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>⚜️ Zepter</span>
-    <span className={insigniaState.zepter ? "text-green-700 font-bold" : "text-red-600"}>
-      {insigniaState.zepter ? "gefallen" : "offen"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>🌍 Apfel</span>
-    <span className={insigniaState.apfel ? "text-green-700 font-bold" : "text-red-600"}>
-      {insigniaState.apfel ? "gefallen" : "offen"}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span>🎯 Vogel</span>
-    <span className="text-red-600">
-      offen
-    </span>
-  </div>
-
-</div>
+          <StatusPanel />
 
           {statusMessage && (
             <div className="bg-green-700 text-white rounded-2xl p-4 text-center font-bold shadow">
@@ -405,17 +427,17 @@ export default function ControlPage() {
         </Link>
 
         <h1 className="text-3xl font-bold text-center mt-2">Bedienung</h1>
-        <p className="text-center mt-2 text-green-100">Kompanie auswählen</p>
+        <p className="text-center mt-2 text-green-100">Kompanie auswählen oder suchen</p>
       </header>
 
       <section className="max-w-md mx-auto p-4 space-y-5">
-        <div
-          className={`rounded-2xl p-3 text-center font-bold shadow ${
-            isOnline ? "bg-green-700 text-white" : "bg-red-700 text-white"
-          }`}
-        >
-          {isOnline ? "🟢 Verbunden" : "🔴 Keine Verbindung"}
-        </div>
+        <StatusPanel />
+
+        {statusMessage && (
+          <div className="bg-green-700 text-white rounded-2xl p-4 text-center font-bold shadow">
+            {statusMessage}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -445,32 +467,83 @@ export default function ControlPage() {
           </button>
         </div>
 
+        <div className="bg-white rounded-2xl shadow p-4 space-y-3">
+          <label className="block text-lg font-bold text-green-900">
+            🔎 Aspirant suchen
+          </label>
+
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Name eingeben..."
+            className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 text-xl text-black placeholder:text-gray-400 focus:border-green-700 focus:outline-none"
+          />
+
+          {searchTerm.trim().length > 0 && (
+            <div className="space-y-2">
+              {searchResults.length === 0 && (
+                <p className="text-gray-600">Kein Aspirant gefunden.</p>
+              )}
+
+              {searchResults.map((participant) => {
+                const company = companies.find(
+                  (c) => c.id === participant.company_key
+                );
+
+                return (
+                  <button
+                    key={participant.id}
+                    onClick={() => selectParticipant(participant, true)}
+                    className="w-full rounded-xl bg-green-900 p-4 text-left text-white shadow active:scale-95 transition"
+                  >
+                    <div className="text-xl font-bold">{participant.name}</div>
+                    <div className="text-sm opacity-80">{company?.name}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {loading && (
           <p className="text-center font-bold text-green-900">Lade Daten...</p>
         )}
 
-        
-
         <div className="space-y-4">
-          {companies.map((company) => (
-            <button
-              key={company.id}
-              onClick={() => selectCompany(company.id)}
-              className="w-full bg-white rounded-2xl shadow p-4 flex items-center gap-5 active:scale-95 transition"
-            >
-              <Image
-                src={company.logo}
-                alt={company.name}
-                width={80}
-                height={80}
-                className="object-contain"
-              />
+          {companies.map((company) => {
+            const count = participantCount(company.id);
 
-              <span className="text-2xl font-bold text-green-900">
-                {company.name}
-              </span>
-            </button>
-          ))}
+            return (
+              <button
+                key={company.id}
+                disabled={count === 0}
+                onClick={() => selectCompany(company.id)}
+                className={`w-full rounded-2xl shadow p-4 flex items-center gap-5 transition ${
+                  count === 0
+                    ? "bg-gray-200 opacity-50 cursor-not-allowed"
+                    : "bg-white active:scale-95"
+                }`}
+              >
+                <Image
+                  src={company.logo}
+                  alt={company.name}
+                  width={80}
+                  height={80}
+                  className="object-contain"
+                />
+
+                <div className="flex-1 text-left">
+                  <div className="text-2xl font-bold text-green-900">
+                    {company.name}
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    👥 {count} Aspiranten
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
     </main>

@@ -11,28 +11,25 @@ export default function Home() {
       </header>
 
       <section className="max-w-md mx-auto p-4 space-y-4">
-        <Link
-          href="/setup"
-          className="block bg-white rounded-2xl shadow p-6 text-center"
-        >
+        <Link href="/setup" className="block bg-white rounded-2xl shadow p-6 text-center">
           <div className="text-4xl mb-2">⚙️</div>
           <div className="text-2xl font-bold text-green-900">Einrichtung</div>
           <p className="text-neutral-600 mt-2">Veranstaltung und Aspiranten anlegen</p>
         </Link>
 
-        <Link
-          href="/control"
-          className="block bg-white rounded-2xl shadow p-6 text-center"
-        >
+        <Link href="/control" className="block bg-white rounded-2xl shadow p-6 text-center">
           <div className="text-4xl mb-2">📱</div>
           <div className="text-2xl font-bold text-green-900">Bedienung</div>
-          <p className="text-neutral-600 mt-2">Kompanie, Schütze und Insignien auswählen</p>
+          <p className="text-neutral-600 mt-2">Schütze und Insignien auswählen</p>
         </Link>
 
-        <Link
-          href="/display"
-          className="block bg-white rounded-2xl shadow p-6 text-center"
-        >
+        <Link href="/participants" className="block bg-white rounded-2xl shadow p-6 text-center">
+          <div className="text-4xl mb-2">📋</div>
+          <div className="text-2xl font-bold text-green-900">Teilnehmer</div>
+          <p className="text-neutral-600 mt-2">Aspiranten ansehen und abgleichen</p>
+        </Link>
+
+        <Link href="/display" className="block bg-white rounded-2xl shadow p-6 text-center">
           <div className="text-4xl mb-2">🖥️</div>
           <div className="text-2xl font-bold text-green-900">Anzeige</div>
           <p className="text-neutral-600 mt-2">Bildschirmansicht für den Livestream</p>

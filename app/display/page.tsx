@@ -71,8 +71,13 @@ export default function DisplayPage() {
   const title = isPrince ? "PRINZENSCHIESSEN" : "KÖNIGSSCHIESSEN";
   const day = isPrince ? "SONNTAG" : "MONTAG";
 
-  const showInsignia =
-    liveState?.message_type === "insignia" && liveState.insignia;
+  const showKingFinal =
+  liveState?.message_type === "insignia" && liveState.insignia === "vogel";
+
+const showInsignia =
+  liveState?.message_type === "insignia" &&
+  liveState.insignia &&
+  liveState.insignia !== "vogel";
 
   return (
     <main className="min-h-screen bg-green-950 text-white flex flex-col relative">
@@ -86,7 +91,40 @@ export default function DisplayPage() {
         <div className="text-4xl font-bold tracking-wide mb-2">{title}</div>
         <div className="text-xl text-green-200 mb-10">{day}</div>
 
-        {showInsignia ? (
+        {showKingFinal ? (
+  <div className="bg-white text-green-950 rounded-3xl px-10 py-12 shadow-2xl w-full max-w-5xl">
+    <div className="text-8xl mb-6">🏆</div>
+
+    <div className="text-7xl font-black mb-6">
+      KÖNIGSSCHUSS
+    </div>
+
+    <div className="text-4xl font-bold mb-4">
+      🦅 Der Vogel ist gefallen
+    </div>
+
+    <div className="mt-8 text-6xl font-black uppercase">
+      {liveState?.participant_name || "Schütze nicht bekannt"}
+    </div>
+
+    {company && (
+      <div className="flex flex-col items-center gap-4 mt-8">
+        <Image
+          src={company.logo}
+          alt={company.name}
+          width={170}
+          height={170}
+          className="object-contain"
+        />
+        <div className="text-4xl font-bold">{company.name}</div>
+      </div>
+    )}
+
+    <div className="text-4xl font-bold mt-10">
+      🎉 Herzlichen Glückwunsch! 🎉
+    </div>
+  </div>
+) : showInsignia ? (
           <div className="bg-white text-green-950 rounded-3xl px-10 py-10 shadow-2xl w-full max-w-5xl">
             <div className="text-7xl font-black mb-8">
                 {liveState.insignia ? insigniaLabels[liveState.insignia] : ""}

@@ -19,8 +19,8 @@ type LiveState = {
 const insigniaLabels = {
   krone: "👑 KRONE GEFALLEN",
   zepter: "⚜️ ZEPTER GEFALLEN",
-  apfel: "🌍 APFEL GEFALLEN",
-  vogel: "🎯 DER VOGEL IST GEFALLEN",
+  apfel: "🍎 APFEL GEFALLEN",
+  vogel: "🦅 DER VOGEL IST GEFALLEN",
 };
 
 export default function DisplayPage() {

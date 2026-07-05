@@ -252,8 +252,8 @@ const mondayEnabled = testMode || today === 1;
     const labels = {
       krone: "👑 Krone",
       zepter: "⚜️ Zepter",
-      apfel: "🌍 Apfel",
-      vogel: "🎯 Vogel",
+      apfel: "🍎 Apfel",
+      vogel: "🦅 Vogel",
     };
 
     showStatus(`✅ ${labels[insignia]} ist jetzt auf dem Bildschirm`);
@@ -295,14 +295,14 @@ const mondayEnabled = testMode || today === 1;
           </div>
 
           <div className="flex justify-between">
-            <span>🌍 Apfel</span>
+            <span>🍎 Apfel</span>
             <span className={insigniaState.apfel ? "text-green-700 font-bold" : "text-red-600"}>
               {insigniaState.apfel ? "gefallen" : "offen"}
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span>🎯 Vogel</span>
+            <span>🦅 Vogel</span>
             <span className="text-red-600">offen</span>
           </div>
         </div>
@@ -409,7 +409,7 @@ const mondayEnabled = testMode || today === 1;
                     onClick={() => sendInsignia("apfel")}
                     className="bg-yellow-500 rounded-2xl p-5 text-2xl font-bold shadow"
                   >
-                    🌍 Apfel
+                    🍎 Apfel
                   </button>
                 )}
               </div>
@@ -422,7 +422,7 @@ const mondayEnabled = testMode || today === 1;
                 }}
                 className="w-full bg-red-700 text-white rounded-2xl p-6 text-2xl font-bold shadow"
               >
-                🎯 Vogel gefallen
+                🦅 Vogel gefallen
               </button>
             )}
           </div>

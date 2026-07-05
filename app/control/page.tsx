@@ -36,6 +36,11 @@ export default function ControlPage() {
   });
 
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
+  const today = new Date().getDay();
+const testMode = true;
+
+const sundayEnabled = testMode || today === 0;
+const mondayEnabled = testMode || today === 1;
 
   useEffect(() => {
     loadParticipants();
@@ -50,6 +55,13 @@ export default function ControlPage() {
         () => loadParticipants()
       )
       .subscribe();
+
+const today = new Date().getDay();
+
+const testMode = false;
+
+const sundayEnabled = testMode || today === 0;
+const mondayEnabled = testMode || today === 1;
 
     return () => {
       supabase.removeChannel(channel);
@@ -440,32 +452,44 @@ export default function ControlPage() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setCompetition("prince")}
-            className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "prince"
-                ? "bg-green-900 text-white"
-                : "bg-white text-green-900"
-            }`}
-          >
-            Sonntag
-            <br />
-            Prinzenschießen
-          </button>
+  <button
+    disabled={!sundayEnabled}
+    onClick={() => setCompetition("prince")}
+    className={`rounded-2xl p-4 font-bold shadow ${
+      competition === "prince"
+        ? "bg-green-900 text-white"
+        : sundayEnabled
+        ? "bg-white text-green-900"
+        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+    }`}
+  >
+    Sonntag
+    <br />
+    Prinzenschießen
+    {!sundayEnabled && (
+      <div className="text-xs mt-1">🔒 nur sonntags</div>
+    )}
+  </button>
 
-          <button
-            onClick={() => setCompetition("king")}
-            className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "king"
-                ? "bg-green-900 text-white"
-                : "bg-white text-green-900"
-            }`}
-          >
-            Montag
-            <br />
-            Königsschießen
-          </button>
-        </div>
+  <button
+    disabled={!mondayEnabled}
+    onClick={() => setCompetition("king")}
+    className={`rounded-2xl p-4 font-bold shadow ${
+      competition === "king"
+        ? "bg-green-900 text-white"
+        : mondayEnabled
+        ? "bg-white text-green-900"
+        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+    }`}
+  >
+    Montag
+    <br />
+    Königsschießen
+    {!mondayEnabled && (
+      <div className="text-xs mt-1">🔒 nur montags</div>
+    )}
+  </button>
+</div>
 
         <div className="bg-white rounded-2xl shadow p-4 space-y-3">
           <label className="block text-lg font-bold text-green-900">
@@ -493,7 +517,24 @@ export default function ControlPage() {
                 return (
                   <button
                     key={participant.id}
-                    onClick={() => selectParticipant(participant, true)}
+                    onClick={async () => {
+  await supabase
+    .from("sf_live_state")
+    .update({
+      competition,
+      company_key: participant.company_key,
+      participant_id: participant.id,
+      participant_name: participant.name,
+      message_type: "normal",
+      insignia: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  showStatus(`📺 ${participant.name} ist jetzt auf dem Bildschirm`);
+
+  setSearchTerm("");
+}}
                     className="w-full rounded-xl bg-green-900 p-4 text-left text-white shadow active:scale-95 transition"
                   >
                     <div className="text-xl font-bold">{participant.name}</div>

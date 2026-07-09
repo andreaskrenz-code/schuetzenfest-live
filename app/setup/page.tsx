@@ -24,11 +24,7 @@ export default function SetupPage() {
     setParticipants([...participants, { name: "", companyKey: "heide" }]);
   }
 
-  function updateParticipant(
-    index: number,
-    field: keyof Participant,
-    value: string
-  ) {
+  function updateParticipant(index: number, field: keyof Participant, value: string) {
     const copy = [...participants];
     copy[index] = { ...copy[index], [field]: value };
     setParticipants(copy);
@@ -38,11 +34,8 @@ export default function SetupPage() {
     setParticipants(participants.filter((_, i) => i !== index));
   }
 
-  async function saveParticipants() {
-    setSaving(true);
-    setMessage("Speichere...");
-
-    const cleanParticipants = participants
+  function prepareRows() {
+    return participants
       .map((p, index) => ({
         name: p.name.trim(),
         company_key: p.companyKey,
@@ -51,6 +44,13 @@ export default function SetupPage() {
         ausgeschieden: false,
       }))
       .filter((p) => p.name.length > 0);
+  }
+
+  async function saveParticipants() {
+    setSaving(true);
+    setMessage("Speichere komplette Liste...");
+
+    const cleanParticipants = prepareRows();
 
     if (cleanParticipants.length === 0) {
       setMessage("Bitte mindestens einen Namen eintragen.");
@@ -77,7 +77,6 @@ export default function SetupPage() {
       .select();
 
     if (deleteResult.error) {
-      console.error(deleteResult.error);
       setMessage(deleteResult.error.message);
       setSaving(false);
       return;
@@ -89,13 +88,50 @@ export default function SetupPage() {
       .select();
 
     if (insertResult.error) {
-      console.error(insertResult.error);
       setMessage(insertResult.error.message);
       setSaving(false);
       return;
     }
 
     setMessage(`Gespeichert: ${cleanParticipants.length} Teilnehmer.`);
+    setSaving(false);
+  }
+
+  async function addNewParticipantsOnly() {
+    setSaving(true);
+    setMessage("Füge Aspiranten hinzu...");
+
+    const cleanParticipants = prepareRows();
+
+    if (cleanParticipants.length === 0) {
+      setMessage("Bitte mindestens einen Namen eintragen.");
+      setSaving(false);
+      return;
+    }
+
+    const { count } = await supabase
+      .from("sf_participants")
+      .select("*", { count: "exact", head: true })
+      .eq("competition", competition);
+
+    const rows = cleanParticipants.map((p, index) => ({
+      ...p,
+      sort_order: (count ?? 0) + index + 1,
+    }));
+
+    const insertResult = await supabase
+      .from("sf_participants")
+      .insert(rows)
+      .select();
+
+    if (insertResult.error) {
+      setMessage(insertResult.error.message);
+      setSaving(false);
+      return;
+    }
+
+    setParticipants([{ name: "", companyKey: "heide" }]);
+    setMessage(`Hinzugefügt: ${rows.length} Aspirant(en).`);
     setSaving(false);
   }
 
@@ -125,15 +161,8 @@ export default function SetupPage() {
       })
       .eq("id", 1);
 
-    await supabase
-      .from("sf_event_log")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-
-    await supabase
-      .from("sf_participants")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("sf_event_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("sf_participants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
     setParticipants([{ name: "", companyKey: "heide" }]);
     setCompetition("prince");
@@ -144,28 +173,22 @@ export default function SetupPage() {
   return (
     <main className="min-h-screen bg-neutral-100">
       <header className="bg-green-900 text-white p-5 shadow relative">
+        <Link
+          href="/"
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
+        >
+          ← Start
+        </Link>
 
-  <Link
-    href="/"
-    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-bold transition"
-  >
-    ← Start
-  </Link>
-
-  <h1 className="text-2xl font-bold text-center">
-    Einrichtung
-  </h1>
-
-</header>
+        <h1 className="text-2xl font-bold text-center">Einrichtung</h1>
+      </header>
 
       <section className="max-w-md mx-auto p-4 space-y-5">
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setCompetition("prince")}
             className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "prince"
-                ? "bg-green-900 text-white"
-                : "bg-white text-green-900"
+              competition === "prince" ? "bg-green-900 text-white" : "bg-white text-green-900"
             }`}
           >
             Sonntag
@@ -176,9 +199,7 @@ export default function SetupPage() {
           <button
             onClick={() => setCompetition("king")}
             className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "king"
-                ? "bg-green-900 text-white"
-                : "bg-white text-green-900"
+              competition === "king" ? "bg-green-900 text-white" : "bg-white text-green-900"
             }`}
           >
             Montag
@@ -188,30 +209,21 @@ export default function SetupPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xl font-bold text-green-950">
-            Aspiranten eingeben
-          </h2>
+          <h2 className="text-xl font-bold text-green-950">Aspiranten eingeben</h2>
 
           {participants.map((participant, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl shadow-sm border p-3 space-y-2"
-            >
+            <div key={index} className="bg-white rounded-xl shadow-sm border p-3 space-y-2">
               <input
                 className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 text-xl text-black placeholder:text-gray-400 focus:border-green-700 focus:outline-none"
                 placeholder="Name"
                 value={participant.name}
-                onChange={(e) =>
-                  updateParticipant(index, "name", e.target.value)
-                }
+                onChange={(e) => updateParticipant(index, "name", e.target.value)}
               />
 
               <select
                 className="w-full p-3 rounded-lg border text-lg text-black bg-white"
                 value={participant.companyKey}
-                onChange={(e) =>
-                  updateParticipant(index, "companyKey", e.target.value)
-                }
+                onChange={(e) => updateParticipant(index, "companyKey", e.target.value)}
               >
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
@@ -235,7 +247,15 @@ export default function SetupPage() {
             onClick={addParticipant}
             className="w-full bg-green-800 text-white rounded-2xl p-5 text-xl font-bold shadow"
           >
-            + Aspirant hinzufügen
+            + Eingabezeile hinzufügen
+          </button>
+
+          <button
+            onClick={addNewParticipantsOnly}
+            disabled={saving}
+            className="w-full bg-green-700 disabled:bg-neutral-400 text-white rounded-2xl p-5 text-xl font-bold shadow"
+          >
+            Nur neue Aspiranten hinzufügen
           </button>
 
           <button
@@ -243,7 +263,7 @@ export default function SetupPage() {
             disabled={saving}
             className="w-full bg-yellow-500 disabled:bg-neutral-400 rounded-2xl p-5 text-xl font-bold shadow"
           >
-            {saving ? "Speichere..." : "Teilnehmer speichern"}
+            {saving ? "Speichere..." : "Komplette Liste ersetzen"}
           </button>
 
           <button
@@ -254,9 +274,7 @@ export default function SetupPage() {
             🧹 Neues Schützenfest vorbereiten
           </button>
 
-          {message && (
-            <p className="text-center font-bold text-green-950">{message}</p>
-          )}
+          {message && <p className="text-center font-bold text-green-950">{message}</p>}
         </div>
       </section>
     </main>

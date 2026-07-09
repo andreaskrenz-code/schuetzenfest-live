@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { companies } from "@/lib/companies";
-import Link from "next/link";
 
 type Competition = "prince" | "king";
 
@@ -46,60 +46,9 @@ export default function SetupPage() {
       .filter((p) => p.name.length > 0);
   }
 
-  async function saveParticipants() {
+  async function saveNewParticipants() {
     setSaving(true);
-    setMessage("Speichere komplette Liste...");
-
-    const cleanParticipants = prepareRows();
-
-    if (cleanParticipants.length === 0) {
-      setMessage("Bitte mindestens einen Namen eintragen.");
-      setSaving(false);
-      return;
-    }
-
-    await supabase
-      .from("sf_live_state")
-      .update({
-        participant_id: null,
-        participant_name: null,
-        company_key: null,
-        message_type: "normal",
-        insignia: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", 1);
-
-    const deleteResult = await supabase
-      .from("sf_participants")
-      .delete()
-      .eq("competition", competition)
-      .select();
-
-    if (deleteResult.error) {
-      setMessage(deleteResult.error.message);
-      setSaving(false);
-      return;
-    }
-
-    const insertResult = await supabase
-      .from("sf_participants")
-      .insert(cleanParticipants)
-      .select();
-
-    if (insertResult.error) {
-      setMessage(insertResult.error.message);
-      setSaving(false);
-      return;
-    }
-
-    setMessage(`Gespeichert: ${cleanParticipants.length} Teilnehmer.`);
-    setSaving(false);
-  }
-
-  async function addNewParticipantsOnly() {
-    setSaving(true);
-    setMessage("Füge Aspiranten hinzu...");
+    setMessage("Speichere Aspiranten...");
 
     const cleanParticipants = prepareRows();
 
@@ -125,13 +74,14 @@ export default function SetupPage() {
       .select();
 
     if (insertResult.error) {
+      console.error(insertResult.error);
       setMessage(insertResult.error.message);
       setSaving(false);
       return;
     }
 
     setParticipants([{ name: "", companyKey: "heide" }]);
-    setMessage(`Hinzugefügt: ${rows.length} Aspirant(en).`);
+    setMessage(`Gespeichert: ${rows.length} Aspirant(en).`);
     setSaving(false);
   }
 
@@ -161,8 +111,15 @@ export default function SetupPage() {
       })
       .eq("id", 1);
 
-    await supabase.from("sf_event_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("sf_participants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase
+      .from("sf_event_log")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    await supabase
+      .from("sf_participants")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
 
     setParticipants([{ name: "", companyKey: "heide" }]);
     setCompetition("prince");
@@ -180,7 +137,7 @@ export default function SetupPage() {
           ← Start
         </Link>
 
-        <h1 className="text-2xl font-bold text-center">Einrichtung</h1>
+        <h1 className="text-2xl font-bold text-center">Teilnehmer erfassen</h1>
       </header>
 
       <section className="max-w-md mx-auto p-4 space-y-5">
@@ -188,7 +145,9 @@ export default function SetupPage() {
           <button
             onClick={() => setCompetition("prince")}
             className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "prince" ? "bg-green-900 text-white" : "bg-white text-green-900"
+              competition === "prince"
+                ? "bg-green-900 text-white"
+                : "bg-white text-green-900"
             }`}
           >
             Sonntag
@@ -199,7 +158,9 @@ export default function SetupPage() {
           <button
             onClick={() => setCompetition("king")}
             className={`rounded-2xl p-4 font-bold shadow ${
-              competition === "king" ? "bg-green-900 text-white" : "bg-white text-green-900"
+              competition === "king"
+                ? "bg-green-900 text-white"
+                : "bg-white text-green-900"
             }`}
           >
             Montag
@@ -209,21 +170,30 @@ export default function SetupPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xl font-bold text-green-950">Aspiranten eingeben</h2>
+          <h2 className="text-xl font-bold text-green-950">
+            Aspiranten eingeben
+          </h2>
 
           {participants.map((participant, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border p-3 space-y-2">
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-sm border p-3 space-y-2"
+            >
               <input
                 className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 text-xl text-black placeholder:text-gray-400 focus:border-green-700 focus:outline-none"
                 placeholder="Name"
                 value={participant.name}
-                onChange={(e) => updateParticipant(index, "name", e.target.value)}
+                onChange={(e) =>
+                  updateParticipant(index, "name", e.target.value)
+                }
               />
 
               <select
                 className="w-full p-3 rounded-lg border text-lg text-black bg-white"
                 value={participant.companyKey}
-                onChange={(e) => updateParticipant(index, "companyKey", e.target.value)}
+                onChange={(e) =>
+                  updateParticipant(index, "companyKey", e.target.value)
+                }
               >
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
@@ -237,7 +207,7 @@ export default function SetupPage() {
                   onClick={() => removeParticipant(index)}
                   className="w-full bg-red-600 text-white rounded-lg p-2 text-sm font-bold"
                 >
-                  Entfernen
+                  Eingabezeile entfernen
                 </button>
               )}
             </div>
@@ -251,19 +221,11 @@ export default function SetupPage() {
           </button>
 
           <button
-            onClick={addNewParticipantsOnly}
-            disabled={saving}
-            className="w-full bg-green-700 disabled:bg-neutral-400 text-white rounded-2xl p-5 text-xl font-bold shadow"
-          >
-            Nur neue Aspiranten hinzufügen
-          </button>
-
-          <button
-            onClick={saveParticipants}
+            onClick={saveNewParticipants}
             disabled={saving}
             className="w-full bg-yellow-500 disabled:bg-neutral-400 rounded-2xl p-5 text-xl font-bold shadow"
           >
-            {saving ? "Speichere..." : "Komplette Liste ersetzen"}
+            {saving ? "Speichere..." : "💾 Aspiranten speichern"}
           </button>
 
           <button
@@ -274,7 +236,9 @@ export default function SetupPage() {
             🧹 Neues Schützenfest vorbereiten
           </button>
 
-          {message && <p className="text-center font-bold text-green-950">{message}</p>}
+          {message && (
+            <p className="text-center font-bold text-green-950">{message}</p>
+          )}
         </div>
       </section>
     </main>
